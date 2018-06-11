@@ -2,6 +2,19 @@ DIR=`pwd`
 BASEDIR="`cd .. && pwd`"
 PIDS=
 
+if ! [ -x `which timeout||echo /dev/null` ]; then
+    function timeout() { perl -e 'alarm shift; exec @ARGV' "$@"; }
+fi
+
+function killpstree() {
+    local children=`ps --ppid $1 --no-heading | awk '{ print $1 }'`
+    for child in $children
+    do
+        killpstree $child
+    done
+    kill $1
+}
+
 # Wait for a regular expression to appear in a file.
 # $1 is the log to check
 # $2 is the regex to wait for
