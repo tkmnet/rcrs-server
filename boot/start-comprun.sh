@@ -12,8 +12,8 @@ startKernel --nomenu --autorun
 startSims
 
 echo "Start your agents"
-timeout 3600 sh -c "waitFor $LOGDIR/kernel.log 'Kernel is shutting down' 30"
-timeout 30 sh -c "waitFor $LOGDIR/kernel.log 'Kernel has shut down' 30"
+timeout 3600 bash -c ". ./functions.sh ; waitFor $LOGDIR/kernel.log 'Kernel is shutting down' 30"
+timeout 30 bash -c ". ./functions.sh ; waitFor $LOGDIR/kernel.log 'Kernel has shut down' 30"
 
 kill $PIDS
 killpstree $$
