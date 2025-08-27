@@ -80,6 +80,15 @@ public class DirectedEdge {
     }
 
     /**
+     * Returns a new DirectedEdge that represents the same underlying edge
+     * but traversed in the opposite direction.
+     * @return A new DirectedEdge with the reverse direction.
+     */
+    public DirectedEdge getReverse() {
+        return new DirectedEdge(this.edge, !this.forward);
+    }
+
+    /**
        Get the coordinates of the start of this edge.
        @return The coordinates of the start of this edge.
      */

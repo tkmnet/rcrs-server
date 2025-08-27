@@ -1,5 +1,6 @@
 package maps.convert.osm2gml;
 
+import java.awt.geom.Rectangle2D;
 import java.util.Set;
 import java.util.Map;
 import java.util.HashSet;
@@ -40,6 +41,8 @@ public class TemporaryMap {
     private Collection<OSMBuildingInfo> osmBuildings;
 
     private int nextID;
+
+    private Rectangle2D cachedBounds;
 
     /**
        Construct a TemporaryMap.
@@ -397,12 +400,18 @@ public class TemporaryMap {
         if (!replacements.isEmpty()) {
             replaceEdge(edge, replacements);
         }
+
+        invalidateBoundsCache();
+
         return replacements;
     }
 
     private Node createNode(double x, double y) {
         Node result = new Node(nextID++, x, y);
         nodes.add(result);
+
+        invalidateBoundsCache();
+
         return result;
     }
 
@@ -425,6 +434,8 @@ public class TemporaryMap {
     private void removeNode(Node n) {
         nodes.remove(n);
         edgesAtNode.remove(n);
+
+        invalidateBoundsCache();
     }
 
     private void removeEdge(Edge e) {
@@ -441,4 +452,34 @@ public class TemporaryMap {
             objectsAtEdge.get(next.getEdge()).remove(object);
         }
     }
+
+    public Rectangle2D getBounds() {
+        if (this.cachedBounds != null) {
+            return this.cachedBounds;
+        }
+
+        Collection<Node> allNodes = getAllNodes();
+        if (allNodes.isEmpty()) {
+            this.cachedBounds = new Rectangle2D.Double();
+            return this.cachedBounds;
+        }
+
+        double minX = Double.MAX_VALUE, minY = Double.MAX_VALUE;
+        double maxX = Double.MIN_VALUE, maxY = Double.MIN_VALUE;
+
+        for (Node node : allNodes) {
+            minX = Math.min(minX, node.getX());
+            minY = Math.min(minY, node.getY());
+            maxX = Math.max(maxX, node.getX());
+            maxY = Math.max(maxY, node.getY());
+        }
+
+        this.cachedBounds = new Rectangle2D.Double(minX, minY, maxX - minX, maxY - minY);
+        return this.cachedBounds;
+    }
+
+    private void invalidateBoundsCache() {
+        this.cachedBounds = null;
+    }
+
 }
