@@ -135,11 +135,23 @@ public class SplitIntersectingEdgesStep extends ConvertStep {
        @return True if e1 was split.
     */
     private boolean processParallelLines(Edge e1, Edge e2) {
+        Node e1Start = e1.getStart();
+        Node e1End = e1.getEnd();
+        Node e2Start = e2.getStart();
+        Node e2End = e2.getEnd();
+
         // If the two parallel lines already share an endpoint, they are considered
         // connected, and we should not attempt to split them further.
-        if (e1.getStart().equals(e2.getStart()) || e1.getStart().equals(e2.getEnd())
-         || e1.getEnd().equals(e2.getStart()) || e2.getStart().equals(e1.getEnd())) {
+        if (e1Start.equals(e2Start) || e1Start.equals(e2End) || e1End.equals(e2Start) || e1End.equals(e2End)) {
             return false; // Already connected, do nothing.
+        }
+
+        // Then, check for coordinate proximity (handles distinct nodes at same location)
+        if (map.isNear(e1Start.getCoordinates(), e2Start.getCoordinates())
+         || map.isNear(e1Start.getCoordinates(), e2End.getCoordinates())
+         || map.isNear(e1End.getCoordinates(), e2Start.getCoordinates())
+         || map.isNear(e1End.getCoordinates(), e2End.getCoordinates())) {
+            return false;
         }
 
         // Possible cases:
