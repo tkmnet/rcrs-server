@@ -59,12 +59,12 @@ public class Convertor {
         List<ConvertStep> steps = new ArrayList<>();
         addStep(new CleanOSMStep(temp), steps, progress, layout, c);
         addStep(new ScanOSMStep(temp), steps, progress, layout, c);
+        addStep(new MergeIntersectionStep(temp), steps, progress, layout, c);
         addStep(new GenerateIntersectionAreaStep(temp), steps, progress, layout, c);
         addStep(new MakeTempObjectsStep(temp), steps, progress, layout, c);
         addStep(new SplitIntersectingEdgesStep(temp), steps, progress, layout, c);
         addStep(new SplitShapesStep(temp), steps, progress, layout, c);
         addStep(new RemoveShapesStep(temp), steps, progress, layout, c);
-        addStep(new MergeShapesStep(temp), steps, progress, layout, c);
         addStep(new ComputePassableEdgesStep(temp), steps, progress, layout, c);
         addStep(new MakeObjectsStep(temp, gmlMap), steps, progress, layout, c);
 

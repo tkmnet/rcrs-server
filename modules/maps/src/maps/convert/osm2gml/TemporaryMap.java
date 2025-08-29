@@ -135,7 +135,7 @@ public class TemporaryMap {
      * @param road The road segment to look up.
      * @return The starting OSMIntersectionInfo.
      */
-    public OSMIntersectionInfo getRoadStartIntersectionInfo(OSMRoadInfo road) {
+    public OSMIntersectionInfo getRoadStartIntersection(OSMRoadInfo road) {
         return roadStarts.get(road);
     }
 
@@ -144,7 +144,7 @@ public class TemporaryMap {
      * @param road The road segment to look up.
      * @return The ending OSMIntersectionInfo.
      */
-    public OSMIntersectionInfo getRoadEndIntersectionInfo(OSMRoadInfo road) {
+    public OSMIntersectionInfo getRoadEndIntersection(OSMRoadInfo road) {
         return roadEnds.get(road);
     }
 
