@@ -1,5 +1,6 @@
 package maps.convert.osm2gml;
 
+import java.awt.geom.Rectangle2D;
 import java.util.List;
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -73,6 +74,29 @@ public class OSMIntersectionInfo implements OSMShape {
     */
     public OSMNode getCentre() {
         return centre;
+    }
+
+    /**
+     * Get the underlying OSMNode that represents the key point of this intersection.
+     * @return The underlying OSMNode.
+     */
+    public OSMNode getUnderlyingNode() {
+        return centre;
+    }
+
+    /**
+     * Get the representative geometric location of this intersection.
+     * If the intersection polygon has been processed, it returns the centroid of that polygon.
+     * Otherwise, it returns the location of the central OSMNode.
+     * @return The location as a Point2D.
+     */
+    public Point2D getLocation() {
+        if (area != null && !area.isEmpty()) {
+            Rectangle2D bounds = area.getBounds2D();
+            return new Point2D(bounds.getCenterX(), bounds.getCenterY());
+        }
+        // As a fallback, use the location of the central node.
+        return new Point2D(centre.getLongitude(), centre.getLatitude());
     }
 
     @Override
