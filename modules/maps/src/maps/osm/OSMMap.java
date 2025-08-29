@@ -370,46 +370,34 @@ public class OSMMap {
 
     private void processWay(Element e) {
         long id = Long.parseLong(e.attributeValue("id"));
-        List<Long> ids = new ArrayList<Long>();
-        for (Object next : e.elements("nd")) {
-            Element nd = (Element)next;
-            Long nextID = Long.parseLong(nd.attributeValue("ref"));
+        List<Long> ids = new ArrayList<>();
+
+        for (Element next : e.elements("nd")) {
+            Long nextID = Long.parseLong(next.attributeValue("ref"));
             ids.add(nextID);
         }
+
         // Is this way a road or a building?
-        boolean road = false;
-        boolean building = false;
-        for (Object next : e.elements("tag")) {
-            Element tag = (Element)next;
-            building = building || tagSignifiesBuilding(tag);
-            road = road || tagSignifiesRoad(tag);
+        boolean isRoad = false;
+        boolean isBuilding = false;
+        boolean isUndergroundOrBridge = false;
+
+        for (Element tag : e.elements("tag")) {
+            String key = tag.attributeValue("k");
+            String value = tag.attributeValue("v");
+
+            isBuilding = isBuilding || "building".equals(key) && "yes".equals(value);
+            isRoad = isRoad || "highway".equals(key) && ROAD_MARKERS.contains(value);
+            isUndergroundOrBridge = isUndergroundOrBridge || "layer".equals(key) && !"0".equals(value);
+            isUndergroundOrBridge = isUndergroundOrBridge || "bridge".equals(key) && "yes".equals(value);
+            isUndergroundOrBridge = isUndergroundOrBridge || "tunnel".equals(key) && "yes".equals(value);
         }
-        if (building) {
+
+        if (isBuilding) {
             buildings.put(id, new OSMBuilding(id, ids));
         }
-        else if (road) {
+        if (isRoad && !isUndergroundOrBridge) {
             roads.put(id, new OSMRoad(id, ids));
         }
-    }
-
-    private boolean tagSignifiesRoad(Element tag) {
-        String key = tag.attributeValue("k");
-        String value = tag.attributeValue("v");
-        if (!"highway".equals(key)) {
-            return false;
-        }
-        return ROAD_MARKERS.contains(value);
-    }
-
-    private boolean tagSignifiesBuilding(Element tag) {
-        String key = tag.attributeValue("k");
-        String value = tag.attributeValue("v");
-        if ("building".equals(key)) {
-            return "yes".equals(value);
-        }
-        if ("rcr:building".equals(key)) {
-            return "1".equals(value);
-        }
-        return false;
     }
 }
