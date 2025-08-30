@@ -87,7 +87,6 @@ public class MergeIntersectionStep extends ConvertStep {
 
         // Update the map with the simplified graph.
         map.setOSMInfo(newIntersections, new ArrayList<>(finalRoads), map.getOSMBuildingInfo());
-        rebuildRoadIntersectionInfo();
 
         // Log, and visualize the state AFTER merging
         String status = "Merged " + originalIntersections.size() + " intersections into " + newIntersections.size();
@@ -149,21 +148,6 @@ public class MergeIntersectionStep extends ConvertStep {
         double dy = p2.getY() - p1.getY();
         double distSq = dx * dx + dy * dy;
         return distSq <= mergeDistance * mergeDistance;
-    }
-
-    private void rebuildRoadIntersectionInfo() {
-        Map<OSMNode, OSMIntersectionInfo> nodeToIntersection = new HashMap<>();
-        for (OSMIntersectionInfo i : map.getOSMIntersectionInfo()) {
-            nodeToIntersection.put(i.getUnderlyingNode(), i);
-        }
-
-        Map<OSMRoadInfo, OSMIntersectionInfo> roadStarts = new HashMap<>();
-        Map<OSMRoadInfo, OSMIntersectionInfo> roadEnds = new HashMap<>();
-        for (OSMRoadInfo road : map.getOSMRoadInfo()) {
-            roadStarts.put(road, nodeToIntersection.get(road.getFrom()));
-            roadEnds.put(road, nodeToIntersection.get(road.getTo()));
-        }
-        map.setRoadIntersectionInfo(roadStarts, roadEnds);
     }
 
     private void visualizeNetwork(Collection<OSMIntersectionInfo> intersections, Collection<OSMRoadInfo> roads, String title, Color colour) {

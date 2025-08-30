@@ -54,17 +54,6 @@ public class ScanOSMStep extends ConvertStep {
         // Scan buildings
         scanBuildings();
 
-        // Store the raw graph information (road-to-intersection mappings) in the temporary map.
-        Map<OSMRoadInfo, OSMIntersectionInfo> roadStarts = new HashMap<>();
-        Map<OSMRoadInfo, OSMIntersectionInfo> roadEnds = new HashMap<>();
-        for (OSMRoadInfo road : roads) {
-            OSMIntersectionInfo startIntersection = nodeToIntersection.get(road.getFrom());
-            OSMIntersectionInfo endIntersection = nodeToIntersection.get(road.getTo());
-            roadStarts.put(road, startIntersection);
-            roadEnds.put(road, endIntersection);
-        }
-        map.setRoadIntersectionInfo(roadStarts, roadEnds);
-
         setStatus("Created " + roads.size() + " roads, " + intersections.size() + " intersections, " + buildings.size() + " buildings");
         map.setOSMInfo(intersections, roads, buildings);
     }
