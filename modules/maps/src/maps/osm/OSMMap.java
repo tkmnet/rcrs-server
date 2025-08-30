@@ -380,7 +380,7 @@ public class OSMMap {
         // Is this way a road or a building?
         boolean isRoad = false;
         boolean isBuilding = false;
-        boolean isUndergroundOrBridge = false;
+        boolean isNonGroundLevel = false;
 
         for (Element tag : e.elements("tag")) {
             String key = tag.attributeValue("k");
@@ -388,15 +388,24 @@ public class OSMMap {
 
             isBuilding = isBuilding || "building".equals(key) && "yes".equals(value);
             isRoad = isRoad || "highway".equals(key) && ROAD_MARKERS.contains(value);
-            isUndergroundOrBridge = isUndergroundOrBridge || "layer".equals(key) && !"0".equals(value);
-            isUndergroundOrBridge = isUndergroundOrBridge || "bridge".equals(key) && "yes".equals(value);
-            isUndergroundOrBridge = isUndergroundOrBridge || "tunnel".equals(key) && "yes".equals(value);
+
+            // Check if this object is on a different level (bridge, tunnel, etc.)
+            if ("layer".equals(key) && !"0".equals(value) ||
+                "bridge".equals(key) && "yes".equals(value) ||
+                "tunnel".equals(key) && "yes".equals(value)) {
+                isNonGroundLevel = true;
+            }
+        }
+
+        // If the object is on a non-ground level, we ignore it completely
+        if (isNonGroundLevel) {
+            return;
         }
 
         if (isBuilding) {
             buildings.put(id, new OSMBuilding(id, ids));
         }
-        if (isRoad && !isUndergroundOrBridge) {
+        if (isRoad) {
             roads.put(id, new OSMRoad(id, ids));
         }
     }
