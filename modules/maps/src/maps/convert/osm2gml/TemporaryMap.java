@@ -513,4 +513,43 @@ public class TemporaryMap {
         this.cachedBounds = null;
     }
 
+    /**
+     * Rebuild the global edge list and all related mappings from the current set of all TemporaryObjects.
+     * This method is computationally expensive and should only be called after major geometric changes
+     * that fundamentally alter the shape of objects, such as CleanOverlapsStep.
+     */
+    public void resynchronizeStateFromObjects() {
+        // Clear all existing low-level geometric data.
+        nodes.clear();
+        edges.clear();
+        edgesAtNode.clear();
+        objectsAtEdge.clear();
+
+        // Re-populate the data from the high-level TemporaryObjects.
+        for (TemporaryObject object : allObjects) {
+            for (DirectedEdge dEdge : object.getEdges()) {
+                Edge edge = dEdge.getEdge();
+                Node start = edge.getStart();
+                Node end = edge.getEnd();
+
+                // Add nodes to the global node list
+                nodes.add(start);
+                nodes.add(end);
+
+                // Add edge to the global edge list
+                edges.add(edge);
+
+                // Rebuild the edgeAtNode mapping
+                edgesAtNode.get(start).add(edge);
+                edgesAtNode.get(end).add(edge);
+
+                // Rebuild the objectsAtEdge mapping
+                objectsAtEdge.get(edge).add(object);
+            }
+        }
+
+        // Invalidate the bounds cache as the node set has changed.
+        invalidateBoundsCache();
+    }
+
 }
