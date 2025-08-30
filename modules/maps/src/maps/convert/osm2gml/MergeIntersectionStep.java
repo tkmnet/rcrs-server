@@ -1,24 +1,17 @@
 package maps.convert.osm2gml;
 
-import maps.convert.ConvertStep;
-import maps.gml.debug.OSMNodeShapeInfo;
 import maps.osm.OSMNode;
 import rescuecore2.log.Logger;
-import rescuecore2.misc.geometry.Line2D;
 import rescuecore2.misc.geometry.Point2D;
-import rescuecore2.misc.gui.ShapeDebugFrame;
 
-import java.awt.*;
 import java.util.*;
 import java.util.List;
 
-public class MergeIntersectionStep extends ConvertStep {
-    private final TemporaryMap map;
+public class MergeIntersectionStep extends BaseSimplificationStep {
     private final double mergeDistance;
 
     public MergeIntersectionStep(TemporaryMap map) {
-        super();
-        this.map = map;
+        super(map);
 
         // Merge intersection within 10 meters of each other.
         this.mergeDistance = ConvertTools.sizeOf1Metre(map.getOSMMap()) * 10.0;
@@ -31,19 +24,16 @@ public class MergeIntersectionStep extends ConvertStep {
 
     @Override
     protected void step() {
-        List<OSMIntersectionInfo> originalIntersections = new ArrayList<>(map.getOSMIntersectionInfo());
-        Collection<OSMRoadInfo> originalRoads = new ArrayList<>(map.getOSMRoadInfo());
+        List<OSMIntersectionInfo> initialIntersections = new ArrayList<>(map.getOSMIntersectionInfo());
+        Collection<OSMRoadInfo> initialRoads = new ArrayList<>(map.getOSMRoadInfo());
 
-        if (originalIntersections.size() < 2) {
+        if (initialIntersections.size() < 2) {
             setStatus("Not enough intersections to merge.");
             return;
         }
 
-        // Visualize the state BEFORE merging
-        visualizeNetwork(originalIntersections, originalRoads, "Before Merging", Color.BLUE);
-
         // Group nearby intersections.
-        List<Set<OSMIntersectionInfo>> groupedIntersections = groupIntersections(originalIntersections);
+        List<Set<OSMIntersectionInfo>> groupedIntersections = groupIntersections(initialIntersections);
 
         // Create new centroid intersections and create a map from old to new.
         List<OSMIntersectionInfo> newIntersections = new ArrayList<>();
@@ -64,7 +54,7 @@ public class MergeIntersectionStep extends ConvertStep {
 
         // Re-link all roads to the new centroid intersections.
         Set<OSMRoadInfo> finalRoads = new HashSet<>();
-        for (OSMRoadInfo road : originalRoads) {
+        for (OSMRoadInfo road : initialRoads) {
             OSMIntersectionInfo oldStart = map.getRoadStartIntersection(road);
             OSMIntersectionInfo oldEnd = map.getRoadEndIntersection(road);
 
@@ -88,11 +78,11 @@ public class MergeIntersectionStep extends ConvertStep {
         // Update the map with the simplified graph.
         map.setOSMInfo(newIntersections, new ArrayList<>(finalRoads), map.getOSMBuildingInfo());
 
-        // Log, and visualize the state AFTER merging
-        String status = "Merged " + originalIntersections.size() + " intersections into " + newIntersections.size();
+        visualizeNetworkDifference(initialIntersections, initialRoads, map.getOSMIntersectionInfo(), map.getOSMRoadInfo(), "Intersection Merging Results");
+
+        String status = "Merged " + initialIntersections.size() + " intersections into " + newIntersections.size();
         setStatus(status);
         Logger.info(status);
-        visualizeNetwork(newIntersections, finalRoads, "After Merging", Color.RED);
     }
 
     private List<Set<OSMIntersectionInfo>> groupIntersections(List<OSMIntersectionInfo> intersections) {
@@ -148,25 +138,5 @@ public class MergeIntersectionStep extends ConvertStep {
         double dy = p2.getY() - p1.getY();
         double distSq = dx * dx + dy * dy;
         return distSq <= mergeDistance * mergeDistance;
-    }
-
-    private void visualizeNetwork(Collection<OSMIntersectionInfo> intersections, Collection<OSMRoadInfo> roads, String title, Color colour) {
-        List<ShapeDebugFrame.ShapeInfo> shapes = new ArrayList<>();
-        Set<OSMNode> intersectionNodes = new HashSet<>();
-        for (OSMIntersectionInfo intersection : intersections) {
-            intersectionNodes.add(intersection.getUnderlyingNode());
-        }
-        for (OSMNode node : intersectionNodes) {
-            shapes.add(new OSMNodeShapeInfo(node, "Intersection", colour, true));
-        }
-        for (OSMRoadInfo road : roads) {
-            if (road.getFrom() == null || road.getTo() == null) continue;
-            Line2D line = new Line2D(
-                    new Point2D(road.getFrom().getLongitude(), road.getFrom().getLatitude()),
-                    new Point2D(road.getTo().getLongitude(), road.getTo().getLatitude())
-            );
-            shapes.add(new ShapeDebugFrame.Line2DShapeInfo(line, "Road", colour, false, false));
-        }
-        debug.show(title, shapes);
     }
 }
