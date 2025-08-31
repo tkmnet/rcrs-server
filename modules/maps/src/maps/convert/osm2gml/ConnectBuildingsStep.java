@@ -236,8 +236,9 @@ public class ConnectBuildingsStep extends BaseModificationStep {
     }
 
     private boolean isSignificantOverlap(Area intersectionArea, TemporaryMap map) {
-        TemporaryObject dummy = new TemporaryIntersection(new ArrayList<>());
-        List<TemporaryObject> polygons = ConvertTools.areaToTemporaryPassableShapes(intersectionArea, dummy, map);
-        return !polygons.isEmpty();
+        double oneMeterInDegrees = ConvertTools.sizeOf1Metre(map.getOSMMap());
+        double epsilon = Math.pow(oneMeterInDegrees / 10, 2);
+        double geometricArea = ConvertTools.getGeometricArea(intersectionArea);
+        return epsilon < geometricArea;
     }
 }

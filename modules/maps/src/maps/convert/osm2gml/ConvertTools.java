@@ -525,4 +525,54 @@ public final class ConvertTools {
         }
         return result;
     }
+
+    /**
+     * Calculate the geometric area of a java.awt.geom.Area object.
+     * This method correctly handles multipart areas and ignores holes.
+     * @param area The Area to measure.
+     * @return The total geometric area.
+     */
+    public static double getGeometricArea(Area area) {
+        if (area == null || area.isEmpty()) return 0.0;
+
+        PathIterator it = area.getPathIterator(null);
+        double totalArea = 0;
+
+        while (!it.isDone()) {
+            List<Point2D> currentPath = new ArrayList<>();
+            double[] coords = new double[6];
+
+            // Extract all points from the current sub-path of the Area
+            for (; !it.isDone(); it.next()) {
+                int type = it.currentSegment(coords);
+
+                if (type == PathIterator.SEG_MOVETO || type == PathIterator.SEG_LINETO) {
+                    currentPath.add(new Point2D(coords[0], coords[1]));
+                } else if (type == PathIterator.SEG_CLOSE) {
+                    // A SEG_CLOSE marks the end of a sub-path.
+                    double pathArea = calculatePathSignedArea(currentPath);
+                    totalArea += Math.abs(pathArea);
+
+                    // Reset for the next potential shape.
+                    currentPath.clear();
+                    break;
+                }
+            }
+            it.next();
+        }
+        return totalArea;
+    }
+
+    // Helper method to calculate the signed area of a single path using the Shoelace formula.
+    private static double calculatePathSignedArea(List<Point2D> path) {
+        if (path.size() < 3) return 0.0;
+        double areaSum = 0.0;
+        Point2D last = path.get(path.size() - 1);
+        for (Point2D current : path) {
+            areaSum += (last.getX() * current.getY()) - (current.getX() * last.getY());
+            last = current;
+        }
+        return areaSum / 2.0;
+    }
+
 }
