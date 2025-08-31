@@ -38,24 +38,7 @@ public class ConnectBuildingsStep extends BaseModificationStep {
     @Override
     protected void step() {
         List<TemporaryBuilding> buildings = new ArrayList<>(map.getBuildings());
-
-        // Find the best possible entrance for each building without modifying the map.
-        List<EntrancePlan> plannedEntrances = findBestEntrances(buildings);
-
-        // Apply the valid, non-conflicting plans to the map.
-        List<TemporaryIntersection> finalEntrances = executePlans(plannedEntrances);
-
-        if (!finalEntrances.isEmpty()) {
-            map.resynchronizeStateFromObjects();
-        }
-
-        setProgress(buildings.size());
-        setStatus("Created " + finalEntrances.size() + " new entrances for buildings.");
-        visualizeDifference(Collections.emptyList(), finalEntrances, "Building Connection Results");
-    }
-
-    private List<EntrancePlan> findBestEntrances(List<TemporaryBuilding> buildings) {
-        List<EntrancePlan> plans = new ArrayList<>();
+        List<TemporaryIntersection> entrances = new ArrayList<>();
         setProgressLimit(buildings.size());
 
         for (int i = 0; i < buildings.size(); i++) {
@@ -68,12 +51,19 @@ public class ConnectBuildingsStep extends BaseModificationStep {
             if (bestPlan != null) {
                 map.splitEdge(bestPlan.buildingEdge(), bestPlan.buildingNode1(), bestPlan.buildingNode2());
                 map.splitEdge(bestPlan.roadEdge(), bestPlan.roadNode1(), bestPlan.roadNode2());
+                map.addIntersection(bestPlan.entranceObject());
 
-                plans.add(bestPlan);
+                entrances.add(bestPlan.entranceObject());
             }
         }
 
-        return plans;
+        if (!entrances.isEmpty()) {
+            map.resynchronizeStateFromObjects();
+        }
+
+        setProgress(buildings.size());
+        setStatus("Created " + entrances.size() + " new entrances for buildings.");
+        visualizeDifference(Collections.emptyList(), entrances, "Building Connection Results");
     }
 
     private EntrancePlan findBestPlanForBuilding(TemporaryBuilding building) {
@@ -82,33 +72,83 @@ public class ConnectBuildingsStep extends BaseModificationStep {
 
         for (DirectedEdge de : building.getEdges()) {
             Edge buildingEdge = de.getEdge();
+            // DEBUG START
+            boolean isBuildingOfInterest = "751d3241".equals(Integer.toHexString(building.hashCode()));
+            boolean isBuildingEdgeOfInterest = 2263 == buildingEdge.getID() && isBuildingOfInterest;
+            if (isBuildingEdgeOfInterest) System.out.println("Building Edge Length: " + buildingEdge.getLine().getDirection().getLength() + " ID: " + buildingEdge.getID());
+            // DEBUG END
             if (buildingEdge.getLine().getDirection().getLength() < entranceWidth) continue;
 
             for (TemporaryRoad road : map.getRoads()) {
                 for (DirectedEdge roadDE : road.getEdges()) {
                     Edge roadEdge = roadDE.getEdge();
 
-                    // Pre-computation and validation of a candidate pair
-                    if (1 < map.getAttachedObjects(roadEdge).size()) continue;
-                    if (roadEdge.getLine().getDirection().getLength() < entranceWidth) continue;
+                    boolean isPassableEdge = 1 < map.getAttachedObjects(roadEdge).size();
+                    if (isPassableEdge) continue;
+
+                    boolean isRoadEdgeTooShort = roadEdge.getLine().getDirection().getLength() < entranceWidth;
+                    if (isRoadEdgeTooShort) continue;
 
                     Point2D wallMidPoint = buildingEdge.getMidPoint();
                     Line2D roadLine = roadEdge.getLine();
                     Point2D connectingPoint = GeometryTools2D.getClosestPointOnSegment(roadLine, wallMidPoint);
+
+                    // Safely calculate the entrance roof on the road, sliding if necessary.
+                    double distFromStart = GeometryTools2D.getDistance(roadLine.getOrigin(), connectingPoint);
+                    double distFromEnd = roadLine.getDirection().getLength() - distFromStart;
+                    double halfWidth = entranceWidth / 2.0;
+                    if (distFromStart < halfWidth) {
+                        double slideAmount = halfWidth - distFromStart;
+                        connectingPoint = connectingPoint.plus(roadLine.getDirection().normalised().scale(slideAmount));
+                    } else if (distFromEnd < halfWidth) {
+                        double slideAmount = halfWidth - distFromEnd;
+                        connectingPoint = connectingPoint.plus(roadLine.getDirection().normalised().scale(-slideAmount));
+                    }
+
+                    // Define the entrance base on the building wall.
+                    Vector2D wallVector = buildingEdge.getLine().getDirection().normalised();
+                    Node b1 = map.getNode(wallMidPoint.plus(wallVector.scale(-halfWidth)));
+                    Node b2 = map.getNode(wallMidPoint.plus(wallVector.scale(halfWidth)));
+
+                    // Define the entrance top using these safe distances.
+                    Vector2D roadVector = roadLine.getDirection().normalised();
+                    Node r1 = map.getNode(connectingPoint.plus(roadVector.scale(-halfWidth)));
+                    Node r2 = map.getNode(connectingPoint.plus(roadVector.scale(halfWidth)));
+
+                    // Create entrance shape
+                    List<DirectedEdge> entranceEdges = new ArrayList<>();
+                    if (0 < wallVector.dot(roadVector)) {
+                        entranceEdges.add(map.getDirectedEdge(b1, b2));
+                        entranceEdges.add(map.getDirectedEdge(b2, r2));
+                        entranceEdges.add(map.getDirectedEdge(r2, r1));
+                        entranceEdges.add(map.getDirectedEdge(r1, b1));
+                    } else {
+                        entranceEdges.add(map.getDirectedEdge(b1, b2));
+                        entranceEdges.add(map.getDirectedEdge(b2, r1));
+                        entranceEdges.add(map.getDirectedEdge(r1, r2));
+                        entranceEdges.add(map.getDirectedEdge(r2, b1));
+                    }
+
+                    TemporaryIntersection entrance = new TemporaryIntersection(entranceEdges);
 
                     Line2D entranceCenterLine = new Line2D(wallMidPoint, connectingPoint);
                     double entranceLength = entranceCenterLine.getDirection().getLength();
 
                     // This prevents creating entrances that are too short to be meaningful
                     // or are likely to cause geometric instability.
-                    if (entranceLength < minConnectDistance || maxConnectDistance < entranceLength) continue;
+                    boolean isConnectDistanceTooShort = entranceLength < minConnectDistance;
+                    boolean isConnectDistanceTooLong = maxConnectDistance < entranceLength;
+                    if (isConnectDistanceTooShort || isConnectDistanceTooLong) continue;
 
                     double angleDeviation = calculateAngleDeviation(entranceCenterLine, buildingEdge, roadEdge);
-                    if (maxAngleDeviation < angleDeviation) continue;
+                    boolean exceedsAngleToTolerance = maxAngleDeviation < angleDeviation;
+                    if (exceedsAngleToTolerance) continue;
+
+                    if (hasCollision(building, roadEdge, entrance)) continue;
 
                     if (angleDeviation < bestAngleDeviation) {
                         bestAngleDeviation = angleDeviation;
-                        bestPlan = createPlan(building, buildingEdge, roadEdge);
+                        bestPlan = new EntrancePlan(entrance, buildingEdge, roadEdge, b1, b2, r1, r2);;
                     }
                 }
             }
@@ -123,70 +163,6 @@ public class ConnectBuildingsStep extends BaseModificationStep {
         double angleToRoad = Math.abs(90.0 - GeometryTools2D.getAngleBetweenVectors(
                 centerLine.getDirection(), roadEdge.getLine().getDirection()));
         return Math.max(angleToBuilding, angleToRoad);
-    }
-
-    private EntrancePlan createPlan(TemporaryBuilding building, Edge buildingEdge, Edge roadEdge) {
-        Point2D wallMidPoint = buildingEdge.getMidPoint();
-        Line2D roadLine = roadEdge.getLine();
-        Point2D connectingPoint = GeometryTools2D.getClosestPointOnSegment(roadLine, wallMidPoint);
-
-        // Safely calculate the entrance roof on the road, sliding if necessary.
-        double distFromStart = GeometryTools2D.getDistance(roadLine.getOrigin(), connectingPoint);
-        double distFromEnd = roadLine.getDirection().getLength() - distFromStart;
-        double halfWidth = entranceWidth / 2.0;
-        if (distFromStart < halfWidth) {
-            double slideAmount = halfWidth - distFromStart;
-            connectingPoint = connectingPoint.plus(roadLine.getDirection().normalised().scale(slideAmount));
-        } else if (distFromEnd < halfWidth) {
-            double slideAmount = halfWidth - distFromEnd;
-            connectingPoint = connectingPoint.plus(roadLine.getDirection().normalised().scale(-slideAmount));
-        }
-
-        // Define the entrance base on the building wall.
-        Vector2D wallVector = buildingEdge.getLine().getDirection().normalised();
-        Node b1 = map.getNode(wallMidPoint.plus(wallVector.scale(-halfWidth)));
-        Node b2 = map.getNode(wallMidPoint.plus(wallVector.scale(halfWidth)));
-
-        // Define the entrance top using these safe distances.
-        Vector2D roadVector = roadLine.getDirection().normalised();
-        Node r1 = map.getNode(connectingPoint.plus(roadVector.scale(-halfWidth)));
-        Node r2 = map.getNode(connectingPoint.plus(roadVector.scale(halfWidth)));
-
-        // Create entrance shape
-        List<DirectedEdge> entranceEdges = new ArrayList<>();
-        if (0 < wallVector.dot(roadVector)) {
-            entranceEdges.add(map.getDirectedEdge(b1, b2));
-            entranceEdges.add(map.getDirectedEdge(b2, r2));
-            entranceEdges.add(map.getDirectedEdge(r2, r1));
-            entranceEdges.add(map.getDirectedEdge(r1, b1));
-        } else {
-            entranceEdges.add(map.getDirectedEdge(b1, b2));
-            entranceEdges.add(map.getDirectedEdge(b2, r1));
-            entranceEdges.add(map.getDirectedEdge(r1, r2));
-            entranceEdges.add(map.getDirectedEdge(r2, b1));
-        }
-
-        TemporaryIntersection entrance = new TemporaryIntersection(entranceEdges);
-
-        // Final collision check.
-        if (hasCollision(building, roadEdge, entrance)) {
-            return null;
-        }
-
-        return new EntrancePlan(entrance, buildingEdge, roadEdge, b1, b2, r1, r2);
-    }
-
-    private List<TemporaryIntersection> executePlans(List<EntrancePlan> plans) {
-        List<TemporaryIntersection> finalEntrances = new ArrayList<>();
-
-        for (EntrancePlan plan : plans) {
-            finalEntrances.add(plan.entranceObject());
-        }
-        for (TemporaryIntersection entrance : finalEntrances) {
-            map.addIntersection(entrance);
-        }
-
-        return finalEntrances;
     }
 
     private boolean isAlreadyConnected(TemporaryBuilding building, Collection<TemporaryRoad> roads) {
