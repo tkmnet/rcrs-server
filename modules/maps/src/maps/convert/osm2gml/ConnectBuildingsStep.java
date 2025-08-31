@@ -63,7 +63,12 @@ public class ConnectBuildingsStep extends BaseModificationStep {
             if (isAlreadyConnected(building, map.getRoads())) continue;
 
             EntrancePlan bestPlan = findBestPlanForBuilding(building);
-            if (bestPlan != null) plans.add(bestPlan);
+            if (bestPlan != null) {
+                map.splitEdge(bestPlan.buildingEdge(), bestPlan.buildingNode1(), bestPlan.buildingNode2());
+                map.splitEdge(bestPlan.roadEdge(), bestPlan.roadNode1(), bestPlan.roadNode2());
+
+                plans.add(bestPlan);
+            }
         }
 
         return plans;
@@ -141,7 +146,6 @@ public class ConnectBuildingsStep extends BaseModificationStep {
         Node r1 = map.getNode(connectingPoint.plus(roadVector.scale(-halfWidth)));
         Node r2 = map.getNode(connectingPoint.plus(roadVector.scale(halfWidth)));
 
-
         // Create entrance shape
         List<DirectedEdge> entranceEdges = new ArrayList<>();
         if (0 < wallVector.dot(roadVector)) {
@@ -170,8 +174,6 @@ public class ConnectBuildingsStep extends BaseModificationStep {
         List<TemporaryIntersection> finalEntrances = new ArrayList<>();
 
         for (EntrancePlan plan : plans) {
-            map.splitEdge(plan.buildingEdge(), plan.buildingNode1(), plan.buildingNode2());
-            map.splitEdge(plan.roadEdge(), plan.roadNode1(), plan.roadNode2());
             finalEntrances.add(plan.entranceObject());
         }
         for (TemporaryIntersection entrance : finalEntrances) {
