@@ -66,6 +66,7 @@ public class Convertor {
         addStep(new CleanBuildingOverlapsStep(temp), steps, progress, layout, c);
         addStep(new MergePassableShapesStep(temp), steps, progress, layout, c);
         addStep(new ConnectBuildingsStep(temp), steps, progress, layout, c);
+        addStep(new PruneOrphanBuildingsStep(temp), steps, progress, layout, c);
         addStep(new SplitIntersectingEdgesStep(temp), steps, progress, layout, c);
         addStep(new SplitShapesStep(temp), steps, progress, layout, c);
         addStep(new RemoveShapesStep(temp), steps, progress, layout, c);
