@@ -11,6 +11,7 @@ import java.util.*;
 public class ConnectBuildingsStep extends BaseModificationStep {
 
     private final double maxConnectDistance;
+    private final double minConnectDistance;
     private final double maxAngleDeviation;
     private final double entranceWidth;
 
@@ -23,7 +24,8 @@ public class ConnectBuildingsStep extends BaseModificationStep {
 
     public ConnectBuildingsStep(TemporaryMap map) {
         super(map);
-        maxConnectDistance = ConvertTools.sizeOfMeters(map.getOSMMap(), 20); // 20 meters
+        maxConnectDistance = ConvertTools.sizeOfMeters(map.getOSMMap(), 20);
+        minConnectDistance = ConvertTools.sizeOfMeters(map.getOSMMap(), 1); // Nearby threshold
         maxAngleDeviation = 45;
         entranceWidth = ConvertTools.sizeOfMeters(map.getOSMMap(), Constants.ROAD_WIDTH);
     }
@@ -95,7 +97,11 @@ public class ConnectBuildingsStep extends BaseModificationStep {
                     Point2D connectingPoint = GeometryTools2D.getClosestPointOnSegment(roadLine, wallMidPoint);
 
                     Line2D entranceCenterLine = new Line2D(wallMidPoint, connectingPoint);
-                    if (maxConnectDistance < entranceCenterLine.getDirection().getLength()) continue;
+                    double entranceLength = entranceCenterLine.getDirection().getLength();
+
+                    // This prevents creating entrances that are too short to be meaningful
+                    // or are likely to cause geometric instability.
+                    if (entranceLength < minConnectDistance || maxConnectDistance < entranceLength) continue;
 
                     double angleDeviation = calculateAngleDeviation(entranceCenterLine, buildingEdge, roadEdge);
                     if (maxAngleDeviation < angleDeviation) continue;
