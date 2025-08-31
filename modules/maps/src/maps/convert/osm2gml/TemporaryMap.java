@@ -258,6 +258,17 @@ public class TemporaryMap {
     }
 
     /**
+     * Get all passable shape (roads and intersections) in the map.
+     * @return All passable shapes.
+     */
+    public Collection<TemporaryObject> getAllPassableShapes() {
+        List<TemporaryObject> passable = new ArrayList<>();
+        passable.addAll(tempRoads);
+        passable.addAll(tempIntersections);
+        return passable;
+    }
+
+    /**
        Get all objects in the map.
        @return All objects.
     */
@@ -551,5 +562,4 @@ public class TemporaryMap {
         // Invalidate the bounds cache as the node set has changed.
         invalidateBoundsCache();
     }
-
 }

@@ -63,7 +63,8 @@ public class Convertor {
         addStep(new MergeIntersectionStep(temp), steps, progress, layout, c);
         addStep(new GenerateIntersectionAreaStep(temp), steps, progress, layout, c);
         addStep(new MakeTempObjectsStep(temp), steps, progress, layout, c);
-        addStep(new CleanOverlapsStep(temp), steps, progress, layout, c);
+        addStep(new CleanBuildingOverlapsStep(temp), steps, progress, layout, c);
+        addStep(new MergePassableShapesStep(temp), steps, progress, layout, c);
         addStep(new SplitIntersectingEdgesStep(temp), steps, progress, layout, c);
         addStep(new SplitShapesStep(temp), steps, progress, layout, c);
         addStep(new RemoveShapesStep(temp), steps, progress, layout, c);
