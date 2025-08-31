@@ -61,6 +61,16 @@ public final class ConvertTools {
     }
 
     /**
+     * Compute the size of a given distance in meters in latitude/longitude for an OSMMap.
+     * @param map    The map to use for calculating the scale.
+     * @param metres The distance in metres to convert.
+     * @return The equivalent size in degrees.
+     */
+    public static double sizeOfMeters(OSMMap map, double metres) {
+        return sizeOf1Metre(map) * metres;
+    }
+
+    /**
        Compute the nearby-node threshold for an OSMMap in degrees.
        @param map The map to look up.
        @param thresholdM The desired threshold in meters.

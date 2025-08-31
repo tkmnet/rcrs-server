@@ -1,6 +1,7 @@
 package maps.convert.osm2gml;
 
 import rescuecore2.misc.geometry.Line2D;
+import rescuecore2.misc.geometry.Point2D;
 
 /**
    An edge. An edge is a line between two nodes.
@@ -45,6 +46,16 @@ public class Edge extends ManagedObject {
     */
     public Line2D getLine() {
         return line;
+    }
+
+    /**
+     * Calculate the midpoint of this edge.
+     * @return A new Point2D representing the midpoint.
+     */
+    public Point2D getMidPoint() {
+        Point2D p1 = start.getCoordinates();
+        Point2D p2 = end.getCoordinates();
+        return new Point2D((p1.getX() + p2.getX()) / 2.0, (p1.getY() + p2.getY()) / 2.0);
     }
 
     @Override
