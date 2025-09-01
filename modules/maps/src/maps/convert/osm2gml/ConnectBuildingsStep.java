@@ -139,7 +139,7 @@ public class ConnectBuildingsStep extends BaseModificationStep {
                     boolean exceedsAngleToTolerance = maxAngleDeviation < angleDeviation;
                     if (exceedsAngleToTolerance) continue;
 
-                    if (hasCollision(building, roadEdge, entrance)) continue;
+                    if (hasCollision(entrance, building, road)) continue;
 
                     if (angleDeviation < bestAngleDeviation) {
                         bestAngleDeviation = angleDeviation;
@@ -176,19 +176,9 @@ public class ConnectBuildingsStep extends BaseModificationStep {
         return false;
     }
 
-    private boolean hasCollision(TemporaryBuilding building, Edge roadEdge, TemporaryIntersection potentialEntrance) {
+    private boolean hasCollision(TemporaryIntersection potentialEntrance, TemporaryBuilding building, TemporaryRoad road) {
         if (potentialEntrance.getShape() == null) return false;
         Area entranceArea = new Area(potentialEntrance.getShape());
-
-        TemporaryRoad parentRoadObject = null;
-        for (TemporaryRoad p : map.getRoads()) {
-            for (DirectedEdge de : p.getEdges()) {
-                if (de.getEdge().equals(roadEdge)) {
-                    parentRoadObject = p;
-                    break;
-                }
-            }
-        }
 
         for (TemporaryObject otherObject : map.getAllObjects()) {
             if (otherObject.getShape() == null) continue;
@@ -197,7 +187,7 @@ public class ConnectBuildingsStep extends BaseModificationStep {
             otherArea.intersect(entranceArea);
 
             if (otherArea.isEmpty()) continue;
-            if (!otherObject.equals(building) && !otherObject.equals(parentRoadObject)) return true;
+            if (!otherObject.equals(building) && !otherObject.equals(road)) return true;
 
             // A significant collision was found
             if (isSignificantOverlap(otherArea, map)) return true;
