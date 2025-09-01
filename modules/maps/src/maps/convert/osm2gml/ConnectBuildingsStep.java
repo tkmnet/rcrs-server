@@ -72,11 +72,6 @@ public class ConnectBuildingsStep extends BaseModificationStep {
 
         for (DirectedEdge de : building.getEdges()) {
             Edge buildingEdge = de.getEdge();
-            // DEBUG START
-            boolean isBuildingOfInterest = "751d3241".equals(Integer.toHexString(building.hashCode()));
-            boolean isBuildingEdgeOfInterest = 2263 == buildingEdge.getID() && isBuildingOfInterest;
-            if (isBuildingEdgeOfInterest) System.out.println("Building Edge Length: " + buildingEdge.getLine().getDirection().getLength() + " ID: " + buildingEdge.getID());
-            // DEBUG END
             if (buildingEdge.getLine().getDirection().getLength() < entranceWidth) continue;
 
             for (TemporaryRoad road : map.getRoads()) {
