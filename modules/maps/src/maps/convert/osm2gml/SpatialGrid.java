@@ -1,23 +1,32 @@
 package maps.convert.osm2gml;
 
-import rescuecore2.misc.geometry.Line2D;
-import rescuecore2.misc.geometry.Point2D;
-
 import java.awt.geom.Rectangle2D;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
-public class SpatialGrid {
+/**
+ * A generic spatial grid that can index any object implementing the SpatialIndexable interface.
+ * @param <T> The type of object to be stored in the grid.
+ */
+public class SpatialGrid<T extends SpatialIndexable> {
 
-    private final Map<GridPoint, Set<Edge>> grid;
+    private final Map<GridPoint, Set<T>> grid;
     private final double cellWidth;
     private final double cellHeight;
     private final double minX;
     private final double minY;
 
+    private record GridPoint(int x, int y) {}
+
     public SpatialGrid(Rectangle2D bounds, double cellSize) {
+        if (bounds == null || bounds.isEmpty() || cellSize <= 0) {
+            // Create a dummy grid if bounds are invalid
+            this.minX = 0; this.minY = 0; this.cellWidth = 1; this.cellHeight = 1;
+            this.grid = new HashMap<>();
+            return;
+        }
         this.minX = bounds.getMinX();
         this.minY = bounds.getMinY();
         this.cellWidth = cellSize;
@@ -25,46 +34,44 @@ public class SpatialGrid {
         this.grid = new HashMap<>();
     }
 
-    private record GridPoint(int x, int y) {}
+    /**
+     * Registers a SpatialIndexable object into the grid.
+     * @param item The object to add.
+     */
+    public void add(T item) {
+        Rectangle2D bounds = item.getBounds();
+        if (bounds == null || bounds.isEmpty()) return;
 
-    private record CellBounds(int minX, int minY, int maxX, int maxY) {}
+        int minCellX = getXCell(bounds.getMinX());
+        int minCellY = getYCell(bounds.getMinY());
+        int maxCellX = getXCell(bounds.getMaxX());
+        int maxCellY = getYCell(bounds.getMaxY());
 
-    private CellBounds getEdgeCellBounds(Edge edge) {
-        Line2D line = edge.getLine();
-        Point2D start = line.getOrigin();
-        Point2D end = line.getEndPoint();
-
-        int startX = getXCell(start.getX());
-        int startY = getYCell(start.getY());
-        int endX = getXCell(end.getX());
-        int endY = getYCell(end.getY());
-
-        return new CellBounds(
-            Math.min(startX, endX),
-            Math.min(startY, endY),
-            Math.max(startX, endX),
-            Math.max(startY, endY)
-        );
-    }
-
-    public void add(Edge edge) {
-        CellBounds bounds = getEdgeCellBounds(edge);
-
-        for (int x = bounds.minX(); x <= bounds.maxX(); x++) {
-            for (int y = bounds.minY(); y <= bounds.maxY(); y++) {
-                addToCell(x, y, edge);
+        for (int x = minCellX; x <= maxCellX; x++) {
+            for (int y = minCellY; y <= maxCellY; y++) {
+                addToCell(x, y, item);
             }
         }
     }
 
-    public Set<Edge> getNearbyEdges(Edge edge) {
-        Set<Edge> nearby = new HashSet<>();
-        CellBounds bounds = getEdgeCellBounds(edge);
+    /**
+     * Gets all objects that are potentially near the given object.
+     * @param item The object to find neighbors for.
+     * @return A Set of nearby objects.
+     */
+    public Set<T> getNearbyItems(T item) {
+        Set<T> nearby = new HashSet<>();
+        Rectangle2D bounds = item.getBounds();
+        if (bounds == null || bounds.isEmpty()) return nearby;
 
-        // Search the 3x3 area around the edge's bounding box.
-        for (int x = bounds.minX() - 1; x <= bounds.maxX() + 1; x++) {
-            for (int y = bounds.minY() - 1; y <= bounds.maxY() + 1; y++) {
-                Set<Edge> cellContent = getFromCell(x, y);
+        int minCellX = getXCell(bounds.getMinX()) - 1;
+        int minCellY = getYCell(bounds.getMinY()) - 1;
+        int maxCellX = getXCell(bounds.getMaxX()) + 1;
+        int maxCellY = getYCell(bounds.getMaxY()) + 1;
+
+        for (int x = minCellX; x <= maxCellX; x++) {
+            for (int y = minCellY; y <= maxCellY; y++) {
+                Set<T> cellContent = getFromCell(x, y);
                 if (cellContent != null) {
                     nearby.addAll(cellContent);
                 }
@@ -73,21 +80,14 @@ public class SpatialGrid {
         return nearby;
     }
 
-    private int getXCell(double x) {
-        return (int) Math.floor((x - minX) / cellWidth);
+    private int getXCell(double x) { return (int) Math.floor((x - minX) / cellWidth); }
+    private int getYCell(double y) { return (int) Math.floor((y - minY) / cellHeight); }
+
+    private void addToCell(int x, int y, T item) {
+        grid.computeIfAbsent(new GridPoint(x, y), k -> new HashSet<>()).add(item);
     }
 
-    private int getYCell(double y) {
-        return (int) Math.floor((y - minY) / cellHeight);
-    }
-
-    private void addToCell(int x, int y, Edge edge) {
-        GridPoint key = new GridPoint(x, y);
-        grid.computeIfAbsent(key, k -> new HashSet<>()).add(edge);
-    }
-
-    private Set<Edge> getFromCell(int x, int y) {
+    private Set<T> getFromCell(int x, int y) {
         return grid.get(new GridPoint(x, y));
     }
-
 }

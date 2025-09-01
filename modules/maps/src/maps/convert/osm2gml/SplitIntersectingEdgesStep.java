@@ -56,7 +56,7 @@ public class SplitIntersectingEdgesStep extends ConvertStep {
                 cellSizeInDegrees = 1e-9;
             }
 
-            SpatialGrid grid = new SpatialGrid(bounds, cellSizeInDegrees);
+            SpatialGrid<Edge> grid = new SpatialGrid<>(bounds, cellSizeInDegrees);
             for (Edge e : edgeThisPass) {
                 grid.add(e);
             }
@@ -67,7 +67,7 @@ public class SplitIntersectingEdgesStep extends ConvertStep {
 
             for (int i = 0; i < edgeThisPass.size(); i++) {
                 Edge next = edgeThisPass.get(i);
-                Set<Edge> nearbyEdges = grid.getNearbyEdges(next);
+                Set<Edge> nearbyEdges = grid.getNearbyItems(next);
 
                 if (check(next, nearbyEdges)) {
                     anySplitInPass = true;
