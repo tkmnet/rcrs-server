@@ -25,7 +25,7 @@ import maps.gml.GMLTools;
 /**
    Abstract base class for temporary data structures during conversion.
 */
-public abstract class TemporaryObject {
+public abstract class TemporaryObject implements SpatialIndexable {
     private List<DirectedEdge> edges;
     private Map<DirectedEdge, TemporaryObject> neighbours;
     private Path2D path;
@@ -92,6 +92,7 @@ public abstract class TemporaryObject {
        Get the bounds of this object.
        @return The bounds.
     */
+    @Override
     public Rectangle2D getBounds() {
         if (bounds == null) {
             bounds = GMLTools.getBounds(makeGMLCoordinates());

@@ -41,13 +41,19 @@ public class ConnectBuildingsStep extends BaseModificationStep {
         List<TemporaryIntersection> entrances = new ArrayList<>();
         setProgressLimit(buildings.size());
 
+        SpatialGrid<TemporaryObject> roadGrid = new SpatialGrid<>(map.getBounds(), maxConnectDistance * 2);
+        for (TemporaryRoad road : map.getRoads()) {
+            roadGrid.add(road);
+        }
+
+
         for (int i = 0; i < buildings.size(); i++) {
             TemporaryBuilding building = buildings.get(i);
             setProgress(i);
 
             if (isAlreadyConnected(building, map.getRoads())) continue;
 
-            EntrancePlan bestPlan = findBestPlanForBuilding(building);
+            EntrancePlan bestPlan = findBestPlanForBuilding(building, roadGrid);
             if (bestPlan != null) {
                 map.splitEdge(bestPlan.buildingEdge(), bestPlan.buildingNode1(), bestPlan.buildingNode2());
                 map.splitEdge(bestPlan.roadEdge(), bestPlan.roadNode1(), bestPlan.roadNode2());
@@ -66,7 +72,7 @@ public class ConnectBuildingsStep extends BaseModificationStep {
         visualizeDifference(Collections.emptyList(), entrances, "Building Connection Results");
     }
 
-    private EntrancePlan findBestPlanForBuilding(TemporaryBuilding building) {
+    private EntrancePlan findBestPlanForBuilding(TemporaryBuilding building, SpatialGrid<TemporaryObject> roadGrid) {
         EntrancePlan bestPlan = null;
         double bestAngleDeviation = Double.MAX_VALUE;
 
@@ -74,7 +80,8 @@ public class ConnectBuildingsStep extends BaseModificationStep {
             Edge buildingEdge = de.getEdge();
             if (buildingEdge.getLine().getDirection().getLength() < entranceWidth) continue;
 
-            for (TemporaryRoad road : map.getRoads()) {
+            for (TemporaryObject obj : roadGrid.getNearbyItems(building)) {
+                TemporaryRoad road = (TemporaryRoad) obj;
                 for (DirectedEdge roadDE : road.getEdges()) {
                     Edge roadEdge = roadDE.getEdge();
 
@@ -143,7 +150,7 @@ public class ConnectBuildingsStep extends BaseModificationStep {
 
                     if (angleDeviation < bestAngleDeviation) {
                         bestAngleDeviation = angleDeviation;
-                        bestPlan = new EntrancePlan(entrance, buildingEdge, roadEdge, b1, b2, r1, r2);;
+                        bestPlan = new EntrancePlan(entrance, buildingEdge, roadEdge, b1, b2, r1, r2);
                     }
                 }
             }
@@ -176,9 +183,9 @@ public class ConnectBuildingsStep extends BaseModificationStep {
         return false;
     }
 
-    private boolean hasCollision(TemporaryIntersection potentialEntrance, TemporaryBuilding building, TemporaryRoad road) {
-        if (potentialEntrance.getShape() == null) return false;
-        Area entranceArea = new Area(potentialEntrance.getShape());
+    private boolean hasCollision(TemporaryIntersection candidate, TemporaryBuilding building, TemporaryRoad road) {
+        if (candidate.getShape() == null) return false;
+        Area entranceArea = new Area(candidate.getShape());
 
         for (TemporaryObject otherObject : map.getAllObjects()) {
             if (otherObject.getShape() == null) continue;
