@@ -5,6 +5,7 @@ import gis2.ScenarioException;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Dimension;
+import java.awt.FlowLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
@@ -23,6 +24,7 @@ import javax.swing.JMenu;
 import javax.swing.JMenuBar;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
+import javax.swing.JScrollPane;
 import javax.swing.JSplitPane;
 import javax.swing.JToggleButton;
 import javax.swing.JToolBar;
@@ -53,9 +55,11 @@ import rescuecore2.config.Config;
  */
 public class ScenarioEditor extends JPanel {
 
-  private static final int VIEWER_PREFERRED_SIZE = 500;
-  private static final int INSPECTOR_PREFERRED_WIDTH = 300;
-  private static final int INSPECTOR_PREFERRED_HEIGHT = 500;
+  private static final int PREFERRED_WIDTH = 800;
+  private static final int PREFERRED_HEIGHT = 600;
+  private static final int PREFERRED_VIEWER_WIDTH = 400;
+  private static final int PREFERRED_INSPECTOR_WIDTH = 400;
+  private static final double SPLIT_RATE = 0.5;
 
   private static final Color FIRE_COLOUR = new Color(255, 0, 0, 128);
   private static final Color FIRE_STATION_COLOUR = new Color(255, 255, 0);
@@ -124,28 +128,32 @@ public class ScenarioEditor extends JPanel {
     super(new BorderLayout());
     this.map = map;
     this.scenario = scenario;
+
     viewer = new GMLMapViewer(map);
+    viewer.setPreferredSize(new Dimension(PREFERRED_VIEWER_WIDTH, PREFERRED_HEIGHT));
     viewer.setPaintNodes(false);
-    statusLabel = new JLabel("Status");
+
     fireOverlay = new DecoratorOverlay();
     centreOverlay = new DecoratorOverlay();
     agentOverlay = new AgentOverlay(this);
+
     viewer.addOverlay(fireOverlay);
     viewer.addOverlay(centreOverlay);
     viewer.addOverlay(agentOverlay);
-    inspector = new GMLObjectInspector(map);
-    undoManager = new UndoManager();
-    viewer.setPreferredSize(
-        new Dimension(VIEWER_PREFERRED_SIZE, VIEWER_PREFERRED_SIZE));
-    inspector.setPreferredSize(
-        new Dimension(INSPECTOR_PREFERRED_WIDTH, INSPECTOR_PREFERRED_HEIGHT));
     viewer.setBackground(Color.GRAY);
     viewer.getPanZoomListener().setPanOnRightMouse();
+
+    inspector = new GMLObjectInspector(map);
+    inspector.setPreferredSize(new Dimension(PREFERRED_INSPECTOR_WIDTH, PREFERRED_HEIGHT));
+
+    statusLabel = new JLabel("Status");
+
+    undoManager = new UndoManager();
+
     changed = false;
+
     JToolBar fileToolbar = new JToolBar("File");
     JToolBar editToolbar = new JToolBar("Edit");
-    JToolBar toolsToolbar = new JToolBar("Tools");
-    toolsToolbar.setLayout(new ModifiedFlowLayout());
     JToolBar functionsToolbar = new JToolBar("Functions");
     JMenu fileMenu = new JMenu("File", false);
     JMenu editMenu = new JMenu("Edit", false);
@@ -154,18 +162,37 @@ public class ScenarioEditor extends JPanel {
 
     createFileActions(fileMenu, fileToolbar);
     createEditActions(editMenu, editToolbar);
-    createToolActions(toolsMenu, toolsToolbar);
     createFunctionActions(functionsMenu, functionsToolbar);
 
-    JSplitPane split = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, viewer,
-        inspector);
+    JSplitPane split = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, viewer, inspector);
+    split.setResizeWeight(SPLIT_RATE);
     add(split, BorderLayout.CENTER);
-    JPanel toolbars = new JPanel(new ModifiedFlowLayout());
-    toolbars.add(fileToolbar);
-    toolbars.add(editToolbar);
-    toolbars.add(functionsToolbar);
-    toolbars.add(toolsToolbar);
-    add(toolbars, BorderLayout.NORTH);
+
+    JToolBar toolbar = new JToolBar();
+    toolbar.setFloatable(false);
+    toolbar.setLayout(new FlowLayout(FlowLayout.LEFT));
+    toolbar.add(fileToolbar);
+    toolbar.add(editToolbar);
+    toolbar.add(functionsToolbar);
+
+    JToolBar toolPanel = new JToolBar("Tools");
+    toolPanel.addPropertyChangeListener("ancestor", event -> {
+      toolPanel.setOrientation(JToolBar.VERTICAL);
+      if (toolPanel.getParent() instanceof JPanel) {
+        this.revalidate();
+      }
+    });
+    createToolActions(toolsMenu, toolPanel);
+
+    JScrollPane toolBarScroll = new JScrollPane(toolbar,
+            JScrollPane.VERTICAL_SCROLLBAR_NEVER,
+            JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
+    JScrollPane toolPanelScroll = new JScrollPane(toolPanel,
+            JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED,
+            JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
+
+    add(toolBarScroll, BorderLayout.NORTH);
+    add(toolPanelScroll, BorderLayout.WEST);
     add(statusLabel, BorderLayout.SOUTH);
     menuBar.add(fileMenu);
     menuBar.add(editMenu);
@@ -205,6 +232,7 @@ public class ScenarioEditor extends JPanel {
     frame.setContentPane(editor);
     frame.setDefaultCloseOperation(WindowConstants.DO_NOTHING_ON_CLOSE);
     frame.pack();
+    frame.setPreferredSize(new Dimension(PREFERRED_WIDTH, PREFERRED_HEIGHT));
     frame.addWindowListener(new WindowAdapter() {
 
       @Override
@@ -634,51 +662,49 @@ public class ScenarioEditor extends JPanel {
   private void createToolActions(JMenu menu, JToolBar toolbar) {
     ButtonGroup toolbarGroup = new ButtonGroup();
     ButtonGroup menuGroup = new ButtonGroup();
-    menu.addSeparator();
-    toolbar.addSeparator();
-    addTool(new PlaceFireTool(this), menu, toolbar, menuGroup, toolbarGroup);
-    addTool(new RemoveFireTool(this), menu, toolbar, menuGroup, toolbarGroup);
-    addTool(new PlaceRefugeTool(this), menu, toolbar, menuGroup, toolbarGroup);
-    addTool(new RemoveRefugeTool(this), menu, toolbar, menuGroup, toolbarGroup);
-    addTool(new PlaceGasStationTool(this), menu, toolbar, menuGroup,
-        toolbarGroup);
-    addTool(new RemoveGasStationTool(this), menu, toolbar, menuGroup,
-        toolbarGroup);
-    addTool(new PlaceHydrantTool(this), menu, toolbar, menuGroup, toolbarGroup);
-    addTool(new RemoveHydrantTool(this), menu, toolbar, menuGroup,
-        toolbarGroup);
     addTool(new PlaceCivilianTool(this), menu, toolbar, menuGroup,
-        toolbarGroup);
+            toolbarGroup);
     addTool(new RemoveCivilianTool(this), menu, toolbar, menuGroup,
-        toolbarGroup);
-    menu.addSeparator();
-    toolbar.addSeparator();
+            toolbarGroup);
     addTool(new PlaceFireBrigadeTool(this), menu, toolbar, menuGroup,
         toolbarGroup);
     addTool(new RemoveFireBrigadeTool(this), menu, toolbar, menuGroup,
-        toolbarGroup);
-    addTool(new PlacePoliceForceTool(this), menu, toolbar, menuGroup,
-        toolbarGroup);
-    addTool(new RemovePoliceForceTool(this), menu, toolbar, menuGroup,
         toolbarGroup);
     addTool(new PlaceAmbulanceTeamTool(this), menu, toolbar, menuGroup,
         toolbarGroup);
     addTool(new RemoveAmbulanceTeamTool(this), menu, toolbar, menuGroup,
         toolbarGroup);
+    addTool(new PlacePoliceForceTool(this), menu, toolbar, menuGroup,
+            toolbarGroup);
+    addTool(new RemovePoliceForceTool(this), menu, toolbar, menuGroup,
+            toolbarGroup);
     menu.addSeparator();
     toolbar.addSeparator();
     addTool(new PlaceFireStationTool(this), menu, toolbar, menuGroup,
         toolbarGroup);
     addTool(new RemoveFireStationTool(this), menu, toolbar, menuGroup,
         toolbarGroup);
-    addTool(new PlacePoliceOfficeTool(this), menu, toolbar, menuGroup,
-        toolbarGroup);
-    addTool(new RemovePoliceOfficeTool(this), menu, toolbar, menuGroup,
-        toolbarGroup);
     addTool(new PlaceAmbulanceCentreTool(this), menu, toolbar, menuGroup,
         toolbarGroup);
     addTool(new RemoveAmbulanceCentreTool(this), menu, toolbar, menuGroup,
         toolbarGroup);
+    addTool(new PlacePoliceOfficeTool(this), menu, toolbar, menuGroup,
+            toolbarGroup);
+    addTool(new RemovePoliceOfficeTool(this), menu, toolbar, menuGroup,
+            toolbarGroup);
+    menu.addSeparator();
+    toolbar.addSeparator();
+    addTool(new PlaceRefugeTool(this), menu, toolbar, menuGroup, toolbarGroup);
+    addTool(new RemoveRefugeTool(this), menu, toolbar, menuGroup, toolbarGroup);
+    addTool(new PlaceGasStationTool(this), menu, toolbar, menuGroup,
+            toolbarGroup);
+    addTool(new RemoveGasStationTool(this), menu, toolbar, menuGroup,
+            toolbarGroup);
+    addTool(new PlaceHydrantTool(this), menu, toolbar, menuGroup, toolbarGroup);
+    addTool(new RemoveHydrantTool(this), menu, toolbar, menuGroup,
+            toolbarGroup);
+    addTool(new PlaceFireTool(this), menu, toolbar, menuGroup, toolbarGroup);
+    addTool(new RemoveFireTool(this), menu, toolbar, menuGroup, toolbarGroup);
   }
 
 
