@@ -25,7 +25,6 @@ import javax.swing.JMenuBar;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
-import javax.swing.JSplitPane;
 import javax.swing.JToggleButton;
 import javax.swing.JToolBar;
 import javax.swing.SwingUtilities;
@@ -43,7 +42,6 @@ import maps.gml.GMLRefuge;
 import maps.gml.view.DecoratorOverlay;
 import maps.gml.view.FilledShapeDecorator;
 import maps.gml.view.GMLMapViewer;
-import maps.gml.view.GMLObjectInspector;
 import org.dom4j.Document;
 import org.dom4j.DocumentException;
 import org.dom4j.DocumentHelper;
@@ -57,12 +55,8 @@ import rescuecore2.config.Config;
  */
 public class ScenarioEditor extends JPanel {
 
-  private static final int PREFERRED_WIDTH           = 800;
-  private static final int PREFERRED_HEIGHT          = 600;
-  private static final int PREFERRED_VIEWER_WIDTH    = 400;
-  private static final int PREFERRED_INSPECTOR_WIDTH = 400;
-
-  private static final double SPLIT_RATE = 0.5;
+  private static final int PREFERRED_WIDTH  = 1280;
+  private static final int PREFERRED_HEIGHT =  800;
 
   private static final Color FIRE_STATION_COLOUR     = new Color(255, 255,   0);
   private static final Color AMBULANCE_CENTRE_COLOUR = new Color(255, 255, 255);
@@ -77,7 +71,6 @@ public class ScenarioEditor extends JPanel {
   private Tool currentTool;
 
   @Getter private final GMLMapViewer viewer;
-  private final GMLObjectInspector inspector;
   private final JLabel statusLabel;
 
   private final DecoratorOverlay fireOverlay;
@@ -127,22 +120,18 @@ public class ScenarioEditor extends JPanel {
     this.map = map;
     this.scenario = scenario;
 
-    viewer = new GMLMapViewer(map);
-    viewer.setPreferredSize(new Dimension(PREFERRED_VIEWER_WIDTH, PREFERRED_HEIGHT));
-    viewer.setPaintNodes(false);
 
     fireOverlay = new DecoratorOverlay();
     centreOverlay = new DecoratorOverlay();
     AgentOverlay agentOverlay = new AgentOverlay(this);
 
+    viewer = new GMLMapViewer(map);
+    viewer.setPaintNodes(false);
     viewer.addOverlay(fireOverlay);
     viewer.addOverlay(centreOverlay);
     viewer.addOverlay(agentOverlay);
     viewer.setBackground(Color.GRAY);
     viewer.getPanZoomListener().setPanOnRightMouse();
-
-    inspector = new GMLObjectInspector(map);
-    inspector.setPreferredSize(new Dimension(PREFERRED_INSPECTOR_WIDTH, PREFERRED_HEIGHT));
 
     statusLabel = new JLabel("Status");
 
@@ -161,10 +150,6 @@ public class ScenarioEditor extends JPanel {
     createFileActions(fileMenu, fileToolbar);
     createEditActions(editMenu, editToolbar);
     createFunctionActions(functionsMenu, functionsToolbar);
-
-    JSplitPane split = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, viewer, inspector);
-    split.setResizeWeight(SPLIT_RATE);
-    add(split, BorderLayout.CENTER);
 
     JToolBar toolbar = new JToolBar();
     toolbar.setFloatable(false);
@@ -189,6 +174,7 @@ public class ScenarioEditor extends JPanel {
             JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED,
             JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
 
+    add(viewer, BorderLayout.CENTER);
     add(toolBarScroll, BorderLayout.NORTH);
     add(toolPanelScroll, BorderLayout.WEST);
     add(statusLabel, BorderLayout.SOUTH);
@@ -228,7 +214,6 @@ public class ScenarioEditor extends JPanel {
     frame.pack();
     frame.setPreferredSize(new Dimension(PREFERRED_WIDTH, PREFERRED_HEIGHT));
     frame.addWindowListener(new WindowAdapter() {
-
       @Override
       public void windowClosing(WindowEvent e) {
         try {
@@ -374,7 +359,6 @@ public class ScenarioEditor extends JPanel {
     scenario = newScenario;
     changed = false;
     viewer.setMap(map);
-    inspector.setMap(map);
     updateOverlays();
   }
 
