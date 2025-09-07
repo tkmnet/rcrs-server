@@ -50,6 +50,14 @@ import org.dom4j.io.SAXReader;
 import org.dom4j.io.XMLWriter;
 import rescuecore2.config.Config;
 
+import static gis2.scenario.EntityColours.AMBULANCE_CENTRE_COLOUR;
+import static gis2.scenario.EntityColours.FIRE_COLOUR;
+import static gis2.scenario.EntityColours.FIRE_STATION_COLOUR;
+import static gis2.scenario.EntityColours.GAS_STATION_COLOUR;
+import static gis2.scenario.EntityColours.HYDRANT_COLOUR;
+import static gis2.scenario.EntityColours.POLICE_OFFICE_COLOUR;
+import static gis2.scenario.EntityColours.REFUGE_COLOUR;
+
 /**
  * A component for editing scenarios.
  */
@@ -57,14 +65,6 @@ public class ScenarioEditor extends JPanel {
 
   private static final int PREFERRED_WIDTH  = 1280;
   private static final int PREFERRED_HEIGHT =  800;
-
-  private static final Color FIRE_STATION_COLOUR     = new Color(255, 255,   0);
-  private static final Color AMBULANCE_CENTRE_COLOUR = new Color(255, 255, 255);
-  private static final Color POLICE_OFFICE_COLOUR    = new Color(  0,   0, 255);
-  private static final Color REFUGE_COLOUR           = new Color(  0, 128,   0);
-  private static final Color FIRE_COLOUR             = new Color(255,   0,   0, 128);
-  private static final Color GAS_STATION_COLOUR      = new Color(255, 128,   0);
-  private static final Color HYDRANT_COLOUR          = new Color(128, 128,   0);
 
   @Getter private GMLMap map;
   @Getter private GisScenario scenario;
@@ -623,12 +623,12 @@ public class ScenarioEditor extends JPanel {
 
     addTool(new PlaceRefugeTool(this), menu, toolbar, menuGroup, toolbarGroup);
     addTool(new RemoveRefugeTool(this), menu, toolbar, menuGroup, toolbarGroup);
+    addTool(new PlaceFireTool(this), menu, toolbar, menuGroup, toolbarGroup);
+    addTool(new RemoveFireTool(this), menu, toolbar, menuGroup, toolbarGroup);
     addTool(new PlaceGasStationTool(this), menu, toolbar, menuGroup, toolbarGroup);
     addTool(new RemoveGasStationTool(this), menu, toolbar, menuGroup, toolbarGroup);
     addTool(new PlaceHydrantTool(this), menu, toolbar, menuGroup, toolbarGroup);
     addTool(new RemoveHydrantTool(this), menu, toolbar, menuGroup, toolbarGroup);
-    addTool(new PlaceFireTool(this), menu, toolbar, menuGroup, toolbarGroup);
-    addTool(new RemoveFireTool(this), menu, toolbar, menuGroup, toolbarGroup);
   }
 
   private void addFunction(final Function f, JMenu menu, JToolBar toolbar) {
