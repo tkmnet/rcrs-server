@@ -645,7 +645,7 @@ public class ScenarioEditor extends JPanel {
   private void addTool(final Tool t, JMenu menu, JToolBar toolbar, ButtonGroup menuGroup, ButtonGroup toolbarGroup) {
     final JToggleButton toggle = new JToggleButton();
     final JCheckBoxMenuItem check = new JCheckBoxMenuItem();
-    Action action = new AbstractAction(t.getName()) {
+    final Action action = new AbstractAction(t.getName()) {
       @Override
       public void actionPerformed(ActionEvent e) {
         if (currentTool != null) {
@@ -657,8 +657,12 @@ public class ScenarioEditor extends JPanel {
         currentTool.activate();
       }
     };
-    toggle.setAction(action);
+    action.putValue(Action.SMALL_ICON, t.getIcon());
+    action.putValue(Action.SHORT_DESCRIPTION, t.getName());
     check.setAction(action);
+    toggle.setAction(action);
+//    toggle.setMaximumSize(new Dimension(300, 30));
+    toggle.setText("");
     menu.add(check);
     toolbar.add(toggle);
     menuGroup.add(check);
