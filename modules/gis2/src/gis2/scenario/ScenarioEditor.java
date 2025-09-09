@@ -7,6 +7,8 @@ import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.event.ActionEvent;
+import java.awt.event.ComponentAdapter;
+import java.awt.event.ComponentEvent;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.io.File;
@@ -151,12 +153,12 @@ public class ScenarioEditor extends JPanel {
     createEditActions(editMenu, editToolbar);
     createFunctionActions(functionsMenu, functionsToolbar);
 
-    JToolBar toolbar = new JToolBar();
-    toolbar.setFloatable(false);
-    toolbar.setLayout(new FlowLayout(FlowLayout.LEFT));
-    toolbar.add(fileToolbar);
-    toolbar.add(editToolbar);
-    toolbar.add(functionsToolbar);
+    JToolBar toolBar = new JToolBar();
+    toolBar.setFloatable(false);
+    toolBar.setLayout(new FlowLayout(FlowLayout.LEFT));
+    toolBar.add(fileToolbar);
+    toolBar.add(editToolbar);
+    toolBar.add(functionsToolbar);
 
     JToolBar toolPanel = new JToolBar("Tools");
     toolPanel.addPropertyChangeListener("ancestor", event -> {
@@ -167,12 +169,8 @@ public class ScenarioEditor extends JPanel {
     });
     createToolActions(toolsMenu, toolPanel);
 
-    JScrollPane toolBarScroll = new JScrollPane(toolbar,
-            JScrollPane.VERTICAL_SCROLLBAR_NEVER,
-            JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
-    JScrollPane toolPanelScroll = new JScrollPane(toolPanel,
-            JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED,
-            JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
+    JScrollPane toolBarScroll   = createToolBarScroll(toolBar);
+    JScrollPane toolPanelScroll = createToolPanelScroll(toolPanel);
 
     add(viewer, BorderLayout.CENTER);
     add(toolBarScroll, BorderLayout.NORTH);
@@ -187,6 +185,49 @@ public class ScenarioEditor extends JPanel {
     saveFile = null;
   }
 
+  private JScrollPane createToolBarScroll(JToolBar toolBar) {
+    JScrollPane toolBarScroll = new JScrollPane(toolBar,
+            JScrollPane.VERTICAL_SCROLLBAR_NEVER,
+            JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
+
+    toolBarScroll.getHorizontalScrollBar().addComponentListener(new ComponentAdapter() {
+      @Override
+      public void componentShown(ComponentEvent e) {
+        toolBarScroll.setPreferredSize(new Dimension(PREFERRED_WIDTH, 60));
+        toolBarScroll.revalidate();
+      }
+
+      @Override
+      public void componentHidden(ComponentEvent e) {
+        toolBarScroll.setPreferredSize(new Dimension(PREFERRED_WIDTH, 45));
+        toolBarScroll.revalidate();
+      }
+    });
+
+    return toolBarScroll;
+  }
+
+  private JScrollPane createToolPanelScroll(JToolBar toolPanel) {
+    JScrollPane toolPanelScroll = new JScrollPane(toolPanel,
+            JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED,
+            JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
+
+    toolPanelScroll.getVerticalScrollBar().addComponentListener(new ComponentAdapter() {
+      @Override
+      public void componentShown(ComponentEvent e) {
+        toolPanelScroll.setPreferredSize(new Dimension(60, PREFERRED_HEIGHT));
+        toolPanelScroll.revalidate();
+      }
+
+      @Override
+      public void componentHidden(ComponentEvent e) {
+        toolPanelScroll.setPreferredSize(new Dimension(45, PREFERRED_HEIGHT));
+        toolPanelScroll.revalidate();
+      }
+    });
+
+    return toolPanelScroll;
+  }
 
   /**
    * Entry point.
@@ -229,7 +270,6 @@ public class ScenarioEditor extends JPanel {
     frame.setVisible(true);
   }
 
-
   /**
    * Load a map and scenario by showing a file chooser dialog.
    *
@@ -269,7 +309,6 @@ public class ScenarioEditor extends JPanel {
     }
   }
 
-
   /**
    * Load a map and scenario from a directory.
    *
@@ -295,7 +334,6 @@ public class ScenarioEditor extends JPanel {
       rescuecore2.scenario.exceptions.ScenarioException {
     load(new File(filename));
   }
-
 
   /**
    * Load a map and scenario from a directory.
@@ -334,7 +372,6 @@ public class ScenarioEditor extends JPanel {
     }
   }
 
-
   /**
    * Set the map and scenario.
    *
@@ -361,7 +398,6 @@ public class ScenarioEditor extends JPanel {
     viewer.setMap(map);
     updateOverlays();
   }
-
 
   public void updateGMLRefuges() {
     for (int next : scenario.getRefuges()) {
@@ -665,7 +701,6 @@ public class ScenarioEditor extends JPanel {
     action.putValue(Action.SHORT_DESCRIPTION, t.getName());
     check.setAction(action);
     toggle.setAction(action);
-//    toggle.setMaximumSize(new Dimension(300, 30));
     toggle.setText("");
     menu.add(check);
     toolbar.add(toggle);
