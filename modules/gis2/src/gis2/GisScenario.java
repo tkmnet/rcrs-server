@@ -904,15 +904,31 @@ public class GisScenario implements rescuecore2.scenario.Scenario, CollapseSimCo
   }
 
   /**
-   * Clear all agents.
+   * Clear all civilians.
    */
-  public void clearAgents() {
+  public void clearCivilians() {
+    civLocations.clear();
+  }
+
+  /**
+   * Clear all fire brigades.
+   */
+  public void clearFireBrigades() {
     fbLocations.clear();
+  }
+
+  /**
+   * Clear all ambulance teams.
+   */
+  public void clearAmbulanceTeams() {
     atLocations.clear();
+  }
+
+  /**
+   * Clear all police forces.
+   */
+  public void clearPoliceForces() {
     pfLocations.clear();
-    fsLocations.clear();
-    acLocations.clear();
-    poLocations.clear();
   }
 
   /**
@@ -923,10 +939,22 @@ public class GisScenario implements rescuecore2.scenario.Scenario, CollapseSimCo
   }
 
   /**
+   * Clear all agents.
+   */
+  public void clearAgents() {
+    clearFireBrigades();
+    clearAmbulanceTeams();
+    clearPoliceForces();
+    fsLocations.clear();
+    acLocations.clear();
+    poLocations.clear();
+  }
+
+  /**
    * Clear all scenario data.
    */
   public void clearAll() {
-    civLocations.clear();
+    clearCivilians();
     clearAgents();
     refuges.clear();
     hydrants.clear();

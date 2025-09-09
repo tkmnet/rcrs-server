@@ -587,6 +587,10 @@ public class ScenarioEditor extends JPanel {
   }
 
   private void createFunctionActions(JMenu menu, JToolBar toolbar) {
+    addFunction(new ClearCiviliansFunction(this), menu, toolbar);
+    addFunction(new ClearFireBrigadesFunction(this), menu, toolbar);
+    addFunction(new ClearAmbulanceTeamsFunction(this), menu, toolbar);
+    addFunction(new ClearPoliceForcesFunction(this), menu, toolbar);
     addFunction(new ClearAgentsFunction(this), menu, toolbar);
     addFunction(new ClearAllFunction(this), menu, toolbar);
     addFunction(new PlaceAgentsFunction(this), menu, toolbar);
