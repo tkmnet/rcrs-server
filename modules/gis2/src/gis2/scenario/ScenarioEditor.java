@@ -587,11 +587,11 @@ public class ScenarioEditor extends JPanel {
   }
 
   private void createFunctionActions(JMenu menu, JToolBar toolbar) {
-    addFunction(new RandomiseFunction(this), menu, toolbar);
-    addFunction(new ClearFiresFunction(this), menu, toolbar);
     addFunction(new ClearAgentsFunction(this), menu, toolbar);
     addFunction(new ClearAllFunction(this), menu, toolbar);
     addFunction(new PlaceAgentsFunction(this), menu, toolbar);
+    addFunction(new RandomiseFunction(this), menu, toolbar);
+    addFunction(new ClearFiresFunction(this), menu, toolbar);
     addFunction(new RandomHydrantPlacementFunction(this), menu, toolbar);
   }
 

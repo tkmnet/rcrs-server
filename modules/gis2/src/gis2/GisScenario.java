@@ -567,9 +567,27 @@ public class GisScenario implements rescuecore2.scenario.Scenario, CollapseSimCo
 
   /**
    * Set the set of refuge locations.
+   * This method updates the set of refuge locations and their bed capacities.
    *
    * @param newLocations The new set of locations.
    */
+  public void setRefuges(Map<Integer, Integer> newLocations) {
+    refuges.clear();
+    refugeBedCapacity.clear();
+    refuges.addAll(newLocations.keySet());
+    refugeBedCapacity.putAll(newLocations);
+
+    // The following block is retained for backward compatibility:
+    refugeRefillCapacity.clear();
+    newLocations.keySet().forEach(location -> refugeRefillCapacity.put(location, 1000));
+  }
+
+  /**
+   * Set the set of refuge locations.
+   *
+   * @param newLocations The new set of locations.
+   */
+  @Deprecated
   public void setRefuges(Set<Integer> newLocations) {
     refuges.clear();
     refuges.addAll(newLocations);
@@ -883,6 +901,37 @@ public class GisScenario implements rescuecore2.scenario.Scenario, CollapseSimCo
    */
   public void removeAmbulanceCentre(int location) {
     acLocations.remove(location);
+  }
+
+  /**
+   * Clear all agents.
+   */
+  public void clearAgents() {
+    fbLocations.clear();
+    atLocations.clear();
+    pfLocations.clear();
+    fsLocations.clear();
+    acLocations.clear();
+    poLocations.clear();
+  }
+
+  /**
+   * Clear all fires.
+   */
+  public void clearFires() {
+    fires.clear();
+  }
+
+  /**
+   * Clear all scenario data.
+   */
+  public void clearAll() {
+    civLocations.clear();
+    clearAgents();
+    refuges.clear();
+    hydrants.clear();
+    gasStations.clear();
+    clearFires();
   }
 
   private void setupAgent(Human h, EntityID position, StandardWorldModel model, Config config)
