@@ -4,6 +4,7 @@ import gis2.GisScenario;
 import gis2.ScenarioException;
 import java.awt.BorderLayout;
 import java.awt.Color;
+import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.event.ActionEvent;
@@ -29,6 +30,7 @@ import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JToggleButton;
 import javax.swing.JToolBar;
+import javax.swing.SwingConstants;
 import javax.swing.SwingUtilities;
 import javax.swing.WindowConstants;
 import javax.swing.filechooser.FileFilter;
@@ -160,13 +162,7 @@ public class ScenarioEditor extends JPanel {
     toolBar.add(editToolbar);
     toolBar.add(functionsToolbar);
 
-    JToolBar toolPanel = new JToolBar("Tools");
-    toolPanel.addPropertyChangeListener("ancestor", event -> {
-      toolPanel.setOrientation(JToolBar.VERTICAL);
-      if (toolPanel.getParent() instanceof JPanel) {
-        this.revalidate();
-      }
-    });
+    JToolBar toolPanel = createToolPanel();
     createToolActions(toolsMenu, toolPanel);
 
     JScrollPane toolBarScroll   = createToolBarScroll(toolBar);
@@ -183,6 +179,33 @@ public class ScenarioEditor extends JPanel {
 
     baseDir = new File(System.getProperty("user.dir"));
     saveFile = null;
+  }
+
+  private JToolBar createToolPanel() {
+    JToolBar toolPanel = new JToolBar("Tools");
+
+    toolPanel.addPropertyChangeListener("ancestor", event -> {
+      toolPanel.setOrientation(JToolBar.VERTICAL);
+      boolean isFloating = toolPanel.getParent() instanceof JPanel;
+
+      if (isFloating) {
+        for (Component component : toolPanel.getComponents()) {
+          if (!(component instanceof JToggleButton toggle)) continue;
+          Action action = toggle.getAction();
+          if (action == null) continue;
+          toggle.setText((String) action.getValue(Action.NAME));
+          toggle.setMaximumSize(new Dimension(500, 30));
+        }
+      } else {
+        for (Component component : toolPanel.getComponents()) {
+          if (!(component instanceof JToggleButton toggle)) continue;
+          toggle.setText("");
+        }
+      }
+      this.revalidate();
+    });
+
+    return toolPanel;
   }
 
   private JScrollPane createToolBarScroll(JToolBar toolBar) {
@@ -699,9 +722,15 @@ public class ScenarioEditor extends JPanel {
     };
     action.putValue(Action.SMALL_ICON, t.getIcon());
     action.putValue(Action.SHORT_DESCRIPTION, t.getName());
-    check.setAction(action);
+
     toggle.setAction(action);
     toggle.setText("");
+    toggle.setHorizontalAlignment(SwingConstants.LEFT);
+
+    check.setAction(action);
+    check.setIcon(null);
+    check.setToolTipText(null);
+
     menu.add(check);
     toolbar.add(toggle);
     menuGroup.add(check);
