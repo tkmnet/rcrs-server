@@ -198,7 +198,7 @@ public class SplitShapeTool extends AbstractTool {
         }
       }
       if ( !add.isEmpty() ) {
-        edge.setPassable( true );
+        editor.getMap().toggleEdgePassable(edge, true);
         return new SplitShapeEdit( edge, add, delete );
       } else {
         editor.getMap().remove( edge );
